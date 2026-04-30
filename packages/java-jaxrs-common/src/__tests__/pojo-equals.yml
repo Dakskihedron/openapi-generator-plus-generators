@@ -1,0 +1,36 @@
+openapi: '3.0.3'
+info:
+  title: POJO equals test
+  version: '1.0'
+paths:
+  /files:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileData'
+      responses:
+        200:
+          description: OK
+components:
+  schemas:
+    FileData:
+      type: object
+      required:
+        - name
+        - content
+      properties:
+        content:
+          # This binary property (content) is implemented in Java as a byte[] property.
+          # The generated equals() method in the POJO compares each property to see if the instances are equal.
+          # Array properties (like byte[]) don't work with Objects.equals(), so this API definition
+          # allows pojo-equals.spec.ts to ensure that the array parameter is correctly compared using
+          # Arrays.equals() instead.
+          # Note that this isn't a problem when the useLombok configuration is applied, since that
+          # option removes the generated equals() method in favour of a Lombok annotation.
+          type: string
+          format: binary
+        name:
+          type: string

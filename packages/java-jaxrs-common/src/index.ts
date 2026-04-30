@@ -597,23 +597,30 @@ export default function createGenerator(config: CodegenConfig, context: JavaGene
 	
 		exportTemplates: async(outputPath, doc) => {
 			const hbs = Handlebars.create()
+
+			function lombokAwareIdentifier(property: CodegenProperty, isPrimitiveBool: boolean) {
+				const identifier = context.generator().toIdentifier(property.name)
+				if (generatorOptions.useLombok && isPrimitiveBool) {
+					return capitalize(identifier.replace(/^is(?=[A-Z])/, ''))
+				}
+				return capitalize(identifier)
+			}
 			
 			registerStandardHelpers(hbs, context)
 
 			hbs.registerHelper('getter', function(property: CodegenProperty) {
-				if (property.schema.schemaType === CodegenSchemaType.BOOLEAN && property.required && !property.nullable) {
-					return `is${capitalize(context.generator().toIdentifier(property.name))}`
+				const isPrimitiveBool = property.schema.schemaType === CodegenSchemaType.BOOLEAN && property.required && !property.nullable
+				const identifier = lombokAwareIdentifier(property, isPrimitiveBool)
+				if (isPrimitiveBool) {
+					return `is${capitalize(identifier)}`
 				} else {
-					return `get${capitalize(context.generator().toIdentifier(property.name))}`
+					return `get${capitalize(identifier)}`
 				}
 			})
 			hbs.registerHelper('setter', function(property: CodegenProperty) {
 				const isPrimitiveBool = property.schema.schemaType === CodegenSchemaType.BOOLEAN && property.required && !property.nullable
-				if (generatorOptions.useLombok && isPrimitiveBool) {
-					const identifier = context.generator().toIdentifier(property.name).replace(/^is(?=[A-Z])/, '')
-					return `set${capitalize(identifier)}`
-				}
-				return `set${capitalize(context.generator().toIdentifier(property.name))}`
+				const identifier = lombokAwareIdentifier(property, isPrimitiveBool)
+				return `set${capitalize(identifier)}`
 			})
 			hbs.registerHelper('escapeString', function(value: string) {
 				// eslint-disable-next-line prefer-rest-params
