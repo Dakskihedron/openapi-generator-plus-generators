@@ -27,5 +27,7 @@ components:
           type: string
         isImage:
           type: boolean
+        isomorphic:
+          type: boolean
         passwordProtect:
           type: boolean

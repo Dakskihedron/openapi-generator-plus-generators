@@ -21,6 +21,7 @@ components:
       required:
         - name
         - content
+        - checksum
       properties:
         content:
           # This binary property (content) is implemented in Java as a byte[] property.
@@ -32,5 +33,10 @@ components:
           # option removes the generated equals() method in favour of a Lombok annotation.
           type: string
           format: binary
+        checksum:
+          # This is a non-binary schema with a native Java array type so we can assert that
+          # Arrays.equals() is selected based on nativeType rather than schema type.
+          type: string
+          x-java-type: byte[]
         name:
           type: string

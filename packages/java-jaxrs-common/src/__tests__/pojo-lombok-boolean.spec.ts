@@ -25,6 +25,7 @@ test('pojo with boolean property starting with “is” uses correct setter meth
 			const content = await fs.promises.readFile(path.join(basePath, MODEL_PATH, 'FileData.java'), 'utf-8')
 			expect(content).toContain('setImage(isImage)')
 			expect(content).not.toContain('setIsImage(isImage)')
+			expect(content).toContain('setIsomorphic(isomorphic)')
 			expect(content).toContain('setPasswordProtect(passwordProtect)')
 			expect(content).not.toContain('setPasswordProtect(isPasswordProtect)')
 			expect(content).not.toContain('setIsPasswordProtect(passwordProtect)')

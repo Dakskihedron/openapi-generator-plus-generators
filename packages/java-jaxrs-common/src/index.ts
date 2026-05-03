@@ -3,7 +3,7 @@ import { CodegenOptionsJava } from './types'
 import path from 'path'
 import Handlebars from 'handlebars'
 import { loadTemplates, emit, registerStandardHelpers, sourcePosition, ActualHelperOptions } from '@openapi-generator-plus/handlebars-templates'
-import { javaLikeGenerator, ConstantStyle, options as javaLikeOptions, JavaLikeContext, EnumMemberStyle } from '@openapi-generator-plus/java-like-generator-helper'
+import { javaLikeGenerator, ConstantStyle, options as javaLikeOptions, JavaLikeContext, EnumMemberStyle, isNativeArray, isPrimitiveBool, identifierCamelCase } from '@openapi-generator-plus/java-like-generator-helper'
 import { capitalize, commonGenerator, configBoolean, configNumber, configObject, configString, configStringArray, debugStringify, nullableConfigString } from '@openapi-generator-plus/generator-common'
 import * as idx from '@openapi-generator-plus/indexed-type'
 
@@ -598,29 +598,38 @@ export default function createGenerator(config: CodegenConfig, context: JavaGene
 		exportTemplates: async(outputPath, doc) => {
 			const hbs = Handlebars.create()
 
-			function lombokAwareIdentifier(property: CodegenProperty, isPrimitiveBool: boolean) {
-				const identifier = context.generator().toIdentifier(property.name)
-				if (generatorOptions.useLombok && isPrimitiveBool) {
-					return capitalize(identifier.replace(/^is(?=[A-Z])/, ''))
-				}
-				return capitalize(identifier)
-			}
-			
 			registerStandardHelpers(hbs, context)
 
+			/**
+			 * Lombok has special treatment for boolean properties that have a prefix of "is".
+			 * e.g. isAdmin would have @Getter isAdmin(), @Setter setAdmin()
+			 * instead of @Getter isIsAdmin(), @Setter setIsAdmin()
+			 */
+			function lombokAwareIdentifier(property: CodegenProperty) {
+				const identifier = context.generator().toIdentifier(property.name)
+				if (!generatorOptions.useLombok) {
+					return identifier
+				}
+				if (!isPrimitiveBool(property)) {
+					return identifier
+				}
+				return identifierCamelCase(identifier.replace(/^is(?=[A-Z])/, ''))
+			}
+
 			hbs.registerHelper('getter', function(property: CodegenProperty) {
-				const isPrimitiveBool = property.schema.schemaType === CodegenSchemaType.BOOLEAN && property.required && !property.nullable
-				const identifier = lombokAwareIdentifier(property, isPrimitiveBool)
-				if (isPrimitiveBool) {
+				const identifier = lombokAwareIdentifier(property)
+				if (isPrimitiveBool(property)) {
 					return `is${capitalize(identifier)}`
 				} else {
 					return `get${capitalize(identifier)}`
 				}
 			})
 			hbs.registerHelper('setter', function(property: CodegenProperty) {
-				const isPrimitiveBool = property.schema.schemaType === CodegenSchemaType.BOOLEAN && property.required && !property.nullable
-				const identifier = lombokAwareIdentifier(property, isPrimitiveBool)
+				const identifier = lombokAwareIdentifier(property)
 				return `set${capitalize(identifier)}`
+			})
+			hbs.registerHelper('isNativeArray', function(nativeType: CodegenNativeType | string | null) {
+				return isNativeArray(nativeType)
 			})
 			hbs.registerHelper('escapeString', function(value: string) {
 				// eslint-disable-next-line prefer-rest-params

@@ -14,10 +14,10 @@ public boolean equals(java.lang.Object o) {
 	{{/if}}
 {{#if (isWrapper)}}
 	{{className name}} {{identifier name}} = ({{className name}}) o;
-	return {{#if (isBinary)}}java.util.Arrays.equals{{else if (isFile)}}java.util.Arrays.equals{{else}}java.util.Objects.equals{{/if}}(this.{{identifier property.name}}, {{identifier name}}.{{identifier property.name}});
+	return {{#if (isNativeArray property.nativeType)}}java.util.Arrays.equals{{else}}java.util.Objects.equals{{/if}}(this.{{identifier property.name}}, {{identifier name}}.{{identifier property.name}});
 	{{else if properties}}
 	{{className name}} {{identifier name}} = ({{className name}}) o;
-	return {{#each properties}}{{#if (isBinary)}}java.util.Arrays.equals{{else if (isFile)}}java.util.Arrays.equals{{else}}java.util.Objects.equals{{/if}}(this.{{identifier name}}, {{identifier ../name}}.{{identifier name}}){{#hasMore}}
+	return {{#each properties}}{{#if (isNativeArray nativeType)}}java.util.Arrays.equals{{else}}java.util.Objects.equals{{/if}}(this.{{identifier name}}, {{identifier ../name}}.{{identifier name}}){{#hasMore}}
 			&& {{/hasMore}}{{/each}};
 {{else}}
 	return true;
