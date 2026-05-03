@@ -1,5 +1,5 @@
 import { CodegenGenerator, CodegenSchemaType, CodegenConfig, CodegenGeneratorContext, CodegenSchemaPurpose, CodegenNativeType, CodegenProperty } from '@openapi-generator-plus/types'
-import { pascalCase, camelCase, configString } from '@openapi-generator-plus/generator-common'
+import { pascalCase, camelCase, configString, capitalize } from '@openapi-generator-plus/generator-common'
 import { constantCase } from 'change-case'
 import { commonGenerator } from '@openapi-generator-plus/generator-common'
 
@@ -44,6 +44,45 @@ export function isNativeArray(nativeType: CodegenNativeType | string | null | un
 
 export function isPrimitiveBool(property: CodegenProperty): boolean {
 	return property.schema.schemaType === CodegenSchemaType.BOOLEAN && property.required && !property.nullable
+}
+
+type BeanMethodOptions = {
+	propertyName: string
+	property: CodegenProperty
+	/** when generating code with `useLombok = true`, bean methods get special treatment.
+	 * See {@link lombokAwareBeanMethodPropertyName} below.
+	*/
+	useLombok?: boolean
+}
+
+/**
+ * Lombok has special treatment for boolean properties that have a prefix of "is".
+ * e.g. isAdmin would have `@Getter isAdmin()`, `@Setter setAdmin()`
+ * instead of `@Getter isIsAdmin()`, `@Setter setIsAdmin()`
+ */
+function lombokAwareBeanMethodPropertyName(options: BeanMethodOptions) {
+	if (!options.useLombok) {
+		return options.propertyName
+	}
+	if (!isPrimitiveBool(options.property)) {
+		return options.propertyName
+	}
+	const propertyNameMaybeWithoutIsPrefix = options.propertyName.replace(/^is(?=[A-Z])/, '')
+	return identifierCamelCase(propertyNameMaybeWithoutIsPrefix)
+}
+
+export function setterMethodName(options: BeanMethodOptions) {
+	const propertyName = lombokAwareBeanMethodPropertyName(options)
+	return `set${capitalize(propertyName)}`
+}
+
+export function getterMethodName(options: BeanMethodOptions) {
+	const propertyName = lombokAwareBeanMethodPropertyName(options)
+	if (isPrimitiveBool(options.property)) {
+		return `is${capitalize(propertyName)}`
+	} else {
+		return `get${capitalize(propertyName)}`
+	}
 }
 
 export const enum ConstantStyle {
